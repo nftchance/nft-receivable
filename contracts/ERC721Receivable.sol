@@ -15,8 +15,6 @@ import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721H
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
-import "hardhat/console.sol";
-
 contract ERC721Receivable is
       ERC721
     , ERC721Holder
@@ -85,28 +83,6 @@ contract ERC721Receivable is
         external 
         payable 
     {
-        console.log('receive value', msg.value);
-
-        _mintToken(
-              _msgSender()
-            , PaymentToken({
-                    tokenType: TOKEN_TYPE.NATIVE
-                  , tokenAddress: address(0)
-                  , tokenId: 0
-                  , aux: msg.value
-              })
-        );
-    }
-
-    /**
-     * See {ERC721Receivable-receive}
-     */
-    fallback() 
-        external 
-        payable 
-    {
-        console.log('fallback vaule', msg.value);
-
         _mintToken(
               _msgSender()
             , PaymentToken({
@@ -248,7 +224,7 @@ contract ERC721Receivable is
     )
         internal
         returns (
-            uint256 
+            uint256 quantity 
         )
     { 
         /// @dev Handling payments in ERC20 because the delivery cannot be guaranteed
@@ -267,7 +243,7 @@ contract ERC721Receivable is
         }
 
         /// @dev Handles the quantity control for ERC20 and ERC1155
-        return _valueQuantity(_paymentToken.aux);
+        quantity = _valueQuantity(_paymentToken.aux);
     }
 
     function _mintToken(
