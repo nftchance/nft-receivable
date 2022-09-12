@@ -50,3 +50,19 @@ The tests are pretty simple, but they do a good job of showing the functionality
       ✓ Can mint 1 with the transfer of an ERC20 (60ms)
 ```
 
+## Usage
+
+You can find an example implementation at [ReceivableToken.sol](/contracts/ReceivableToken.sol).
+
+To install the needed libraries run:
+`npm i`
+
+With your libraries installed run:
+`npx hardhat test`
+
+To the contract for yourself:
+`Fork this repository`
+`Edit arguments.js`
+`Deploy the contract`
+
+Copy-pasting is completely allowed and you can use this however.
