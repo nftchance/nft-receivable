@@ -32,6 +32,16 @@ module.exports = {
         url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
       },
     },
+    rinkeby: {
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gasPrice: 5000000000, // 5 gwei
+    },
+    mainnet: {
+      url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
+      accounts: [`0x${PRIVATE_KEY}`],
+      gasPrice: 50000000000, // 50 gwei
+    },
   },
   gasReporter: {
     currency: 'USD',
