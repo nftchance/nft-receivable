@@ -164,5 +164,37 @@ describe("Receivable", function () {
 
             assert.equal((await receivableERC20.balanceOf(address1.address)).toString(), 1)
         })
+
+        it("Can mint entire supply", async () => { 
+            await mockERC20.connect(address1).mint(address1.address, 1000);
+
+            // set allowance for erc20 token
+            await mockERC20.connect(address1).approve(receivableERC20.address, 99);
+
+            // Mint 10 tokens to owner by transferring the mock erc20 to the receivable token
+            await receivableERC20.connect(address1).mintToken({
+                tokenType: 1,
+                tokenAddress: mockERC20.address,
+                tokenId: 0,
+                aux: 99
+            });
+
+            assert.equal((await receivableERC20.balanceOf(address1.address)).toString(), 100)
+        })
+
+        it("Cannot mint over erc721 receivable max supply", async () => { 
+            await mockERC20.connect(address1).mint(address1.address, 1000);
+
+            // set allowance for erc20 token
+            await mockERC20.connect(address1).approve(receivableERC20.address, 100);
+
+            // Mint 10 tokens to owner by transferring the mock erc20 to the receivable token
+            await receivableERC20.connect(address1).mintToken({
+                tokenType: 1,
+                tokenAddress: mockERC20.address,
+                tokenId: 0,
+                aux: 100
+            }).should.be.revertedWith("ERC721Receivable::mintToken: total supply exceeded.");
+        });
     });
 });
