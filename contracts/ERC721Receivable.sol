@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.16;
 
-import { ERC721 } from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import { ERC721A } from "erc721a/contracts/ERC721A.sol";
 
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
@@ -16,7 +16,7 @@ import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 contract ERC721Receivable is
-      ERC721
+      ERC721A
     , ERC721Holder
     , ERC1155Holder
 {
@@ -29,7 +29,6 @@ contract ERC721Receivable is
 
     struct PaymentTokenBitpacked { 
         uint32 data;
-        uint256 tokenId;
         uint256 aux;
     }
 
@@ -39,19 +38,14 @@ contract ERC721Receivable is
      * ---- 0 = native, 1 = ERC20, 2 = ERC721, 3 = ERC1155.
      * @param tokenAddress The address of the token being used for payment
      * ---- 0x0 for NATIVE, contract address for every other type.
-     * @param tokenId The token ID of the token being used for payment
-     * ---- 0 for NATIVE and ERC20, ERC721 or ERC1155 token ID.
      * @param aux An auxiliary value for the token being used for payment
      * ---- amount of tokens if NATIVE, ERC20 or ERC1155.
      */
     struct PaymentToken { 
         TOKEN_TYPE tokenType;
         address tokenAddress;
-        uint256 tokenId;
         uint256 aux;
     }
-
-    uint256 totalSupply;
 
     uint256 constant MAX_SUPPLY = 101;
 
@@ -64,7 +58,7 @@ contract ERC721Receivable is
         , string memory _symbol
         , PaymentToken memory _paymentToken
     )
-        ERC721(
+        ERC721A(
               _name
             , _symbol
         )
@@ -84,11 +78,10 @@ contract ERC721Receivable is
         payable 
     {
         _mintToken(
-              _msgSender()
+              msg.sender
             , PaymentToken({
                     tokenType: TOKEN_TYPE.NATIVE
                   , tokenAddress: address(0)
-                  , tokenId: 0
                   , aux: msg.value
               })
         );
@@ -114,7 +107,7 @@ contract ERC721Receivable is
     {
         /// @dev Confirm the address of the token is the same as the payment token.
         require(
-              _msgSender() == paymentToken.tokenAddress
+              msg.sender == paymentToken.tokenAddress
             , "ERC721Receivable::onERC721Received: invalid token."
         );
 
@@ -122,8 +115,7 @@ contract ERC721Receivable is
               _from
             , PaymentToken({
                     tokenType: TOKEN_TYPE.ERC721
-                  , tokenAddress: _msgSender()
-                  , tokenId: 0
+                  , tokenAddress: msg.sender
                   , aux: 1
               })
         );
@@ -152,7 +144,7 @@ contract ERC721Receivable is
     {
         /// @dev Confirm the address of the token is the same as the payment token.
         require(
-              _msgSender() == paymentToken.tokenAddress
+              msg.sender == paymentToken.tokenAddress
             , "ERC721Receivable::onERC1155Received: invalid token."
         );
 
@@ -162,7 +154,6 @@ contract ERC721Receivable is
             , PaymentToken({
                     tokenType: TOKEN_TYPE.ERC1155
                   , tokenAddress: address(0)
-                  , tokenId: 0
                   , aux: _value
               })
         );
@@ -232,9 +223,10 @@ contract ERC721Receivable is
         if(paymentToken.tokenType == TOKEN_TYPE.ERC20) {
             IERC20 _token = IERC20(paymentToken.tokenAddress);
 
+            /// @dev Transfer the tokens to the contract
             require(
                   _token.transferFrom(
-                        _msgSender()
+                        msg.sender
                       , address(this)
                       , _paymentToken.aux
                   )
@@ -253,24 +245,19 @@ contract ERC721Receivable is
         internal
         virtual
     {
+        uint256 _totalSupply = totalSupply();
+
         uint256 _quantity = _fundMint(_paymentToken);         
-        
+
         require(
-              totalSupply + _quantity < MAX_SUPPLY
+              _totalSupply + _quantity < MAX_SUPPLY
             , "ERC721Receivable::mintToken: total supply exceeded."
         );
-
-        uint256 i;
-        for(
-            i;
-            i < _quantity;
-            i++
-        ) {
-            _mint(
-                  _to
-                , totalSupply++
-            );
-        }
+        
+        _mint(
+              _to
+            , _quantity
+        );
     }
 
     function supportsInterface(
@@ -279,7 +266,7 @@ contract ERC721Receivable is
         public
         view
         override(
-            ERC721
+            ERC721A
           , ERC1155Receiver
         )
         returns (

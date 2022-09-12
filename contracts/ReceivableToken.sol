@@ -32,7 +32,7 @@ contract ReceivableToken is
         );
 
         _mintToken(
-              _msgSender()
+              msg.sender
             , _paymentToken
         );
     }
