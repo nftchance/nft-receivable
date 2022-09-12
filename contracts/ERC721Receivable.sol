@@ -242,6 +242,9 @@ contract ERC721Receivable is
         internal
         virtual
     {
+        /// @dev Run the pre-hook that allows any implementer to extend the logic.
+        _beforeMint(_aux);
+
         /// @dev Determine the amount of tokens that have been minted.
         uint256 _totalSupply = totalSupply();
 
@@ -257,6 +260,33 @@ contract ERC721Receivable is
         _mint(
               _to
             , _quantity
+        );
+
+        _afterMint(
+              _to
+            , _quantity
+        );
+    }
+
+ /**
+     * @notice Allows a user to mint a token with an ERC20.
+     * @param _aux The amount of ERC20 tokens to pay.
+     */
+    function mintToken(
+        uint256 _aux
+    )
+        external
+        payable
+    {
+        require(
+              !paymentToken.tokenType
+            , "ReceivableToken: can only call this function when using ERC20 as payment."
+        );
+
+        /// @dev Mint the tokens.
+        _mintToken(
+              msg.sender
+            , _aux
         );
     }
 
@@ -280,4 +310,28 @@ contract ERC721Receivable is
     {
         return super.supportsInterface(_interfaceId);
     }
+
+    /**
+     * @notice Allows an implementation to extend pre-mint logic.
+     * @param _aux The amount of tokens being used for payment.
+     */
+    function _beforeMint(
+        uint256 _aux
+    ) 
+        internal 
+        virtual 
+    {}
+
+    /**
+     * @notice Allows an implementation to extend post-mint logic.
+     * @param _to The address of the receiver of the tokens.
+     * @param _quantity The amount of tokens being minted.
+     */
+    function _afterMint(
+        address _to,
+        uint256 _quantity
+    ) 
+        internal 
+        virtual 
+    {}
 }

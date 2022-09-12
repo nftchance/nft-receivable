@@ -20,9 +20,13 @@ describe("Receivable", function () {
                 tokenId: 0,
                 aux: ethers.utils.parseEther('0.02')
             },
-            101
+            101,
+            "ipfs://"
         );
         receivableToken = await receivableToken.deployed();
+
+        // open minting
+        await receivableToken.setMintOpen(true);
     })
 
     describe('Token Deployment', async () => {
@@ -65,9 +69,13 @@ describe("Receivable", function () {
                     tokenId: 0,
                     aux: 1
                 },
-                101
+                101,
+                "ipfs://"
             );
             receivable1155 = await receivable1155.deployed();
+
+            // open minting
+            await receivable1155.setMintOpen(true);
         })
 
         it("Can mint 1 with the transfer of an ERC1155", async () => {
@@ -99,9 +107,13 @@ describe("Receivable", function () {
                     tokenId: 0,
                     aux: 1
                 },
-                101
+                101,
+                "ipfs://"
             );
             receivable721 = await receivable721.deployed();
+
+            // open minting
+            await receivable721.setMintOpen(true);
         })
 
         it("Can mint 1 with the transfer of an ERC721", async () => {
@@ -155,9 +167,13 @@ describe("Receivable", function () {
                     tokenId: 0,
                     aux: 1
                 },
-                101
+                101,
+                "ipfs://"
             );
             receivableERC20 = await receivableERC20.deployed();
+
+            // open minting
+            await receivableERC20.setMintOpen(true);
         })
 
         it("Can mint 1 with the transfer of an ERC20", async () => {
