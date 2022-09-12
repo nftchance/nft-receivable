@@ -10,6 +10,20 @@ import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC
 /// @dev Interface to transfer ERC20s for payment.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+/**
+ * @title ReceivableToken
+ * @author nftchance
+ * @notice ReceivableToken is a contract that allows users to mint ERC721 tokens
+ *         by paying a fee in ETH, ERC20, ERC721 or ERC1155 tokens depending on 
+ *        the payment token type.
+ * @dev The primary appeal of using this architecture is that a user does not have to 
+ *      pre-approve the token besides for ERC20 due to the standard ERC20 interface.
+ *      This is because the contract is not transferring the tokens from the user (besides for ERC20)
+ *      and instead is processing the mint when a token is received. This is a more gas efficient
+ *      approach than the standard ERC721 transferFrom approach that can complex caveats and orders.
+ * @dev Because everything processes at the time of receiving, `mintToken()` is only used for ERC20 and
+ *      everything else is a normal transfer.
+ */
 contract ERC721Receivable is
       ERC721A
     , ERC721Holder
