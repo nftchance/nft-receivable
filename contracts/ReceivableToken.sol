@@ -21,19 +21,19 @@ contract ReceivableToken is
     { }
 
     function mintToken(
-          PaymentToken memory _paymentToken
+        uint256 _aux
     )
         external
         payable
     {
         require(
-              _paymentToken.tokenType == TOKEN_TYPE.ERC20
+              paymentToken.tokenType == TOKEN_TYPE.ERC20
             , "ReceivableToken: Only ERC20 tokens are accepted. Everything else must be sent directly."
         );
 
         _mintToken(
               msg.sender
-            , _paymentToken
+            , _aux
         );
     }
 }

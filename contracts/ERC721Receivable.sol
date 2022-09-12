@@ -28,7 +28,7 @@ contract ERC721Receivable is
     }
 
     struct PaymentTokenBitpacked { 
-        uint32 data;
+        uint32 tokenData;
         uint256 aux;
     }
 
@@ -77,13 +77,14 @@ contract ERC721Receivable is
         external 
         payable 
     {
+        require(
+              paymentToken.tokenType == TOKEN_TYPE.NATIVE
+            , "ERC721Receivable: Only native tokens are accepted. Everything else must be sent directly."
+        );
+
         _mintToken(
               msg.sender
-            , PaymentToken({
-                    tokenType: TOKEN_TYPE.NATIVE
-                  , tokenAddress: address(0)
-                  , aux: msg.value
-              })
+            , msg.value
         );
     }
 
@@ -113,11 +114,7 @@ contract ERC721Receivable is
 
         _mintToken(
               _from
-            , PaymentToken({
-                    tokenType: TOKEN_TYPE.ERC721
-                  , tokenAddress: msg.sender
-                  , aux: 1
-              })
+            , 1
         );
 
         return this.onERC721Received.selector;
@@ -151,11 +148,7 @@ contract ERC721Receivable is
         /// @dev Process the payment and mint the purchased tokens to the operator of the tokens
         _mintToken(
               _operator
-            , PaymentToken({
-                    tokenType: TOKEN_TYPE.ERC1155
-                  , tokenAddress: address(0)
-                  , aux: _value
-              })
+            , _value
         );
 
         return this.onERC1155Received.selector;
@@ -190,7 +183,7 @@ contract ERC721Receivable is
     )
         internal
     {
-        paymentToken = _paymentToken; 
+        paymentToken = _paymentToken;
     }
     
     /**
@@ -211,7 +204,7 @@ contract ERC721Receivable is
     }
 
     function _fundMint(
-          PaymentToken memory _paymentToken
+        uint256 _aux
     )
         internal
         returns (
@@ -228,26 +221,26 @@ contract ERC721Receivable is
                   _token.transferFrom(
                         msg.sender
                       , address(this)
-                      , _paymentToken.aux
+                      , _aux
                   )
                 , "ERC721Receivable::mintToken: insufficient allowance."
             );
         }
 
         /// @dev Handles the quantity control for ERC20 and ERC1155
-        quantity = _valueQuantity(_paymentToken.aux);
+        quantity = _valueQuantity(_aux);
     }
 
     function _mintToken(
           address _to
-        , PaymentToken memory _paymentToken
+        , uint256 _aux
     )
         internal
         virtual
     {
         uint256 _totalSupply = totalSupply();
 
-        uint256 _quantity = _fundMint(_paymentToken);         
+        uint256 _quantity = _fundMint(_aux);         
 
         require(
               _totalSupply + _quantity < MAX_SUPPLY

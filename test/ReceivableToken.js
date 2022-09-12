@@ -161,12 +161,7 @@ describe("Receivable", function () {
             await mockERC20.connect(address1).approve(receivableERC20.address, 1);
 
             // Mint 1 token to owner by transferring the mock erc20 to the receivable token
-            await receivableERC20.connect(address1).mintToken({
-                tokenType: 1,
-                tokenAddress: mockERC20.address,
-                tokenId: 0,
-                aux: 1
-            });
+            await receivableERC20.connect(address1).mintToken(1);
 
             assert.equal((await receivableERC20.balanceOf(address1.address)).toString(), 1)
         })
