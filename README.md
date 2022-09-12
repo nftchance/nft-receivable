@@ -60,10 +60,11 @@ To install the needed libraries run:
 With your libraries installed run:
 `npx hardhat test`
 
-To the contract for yourself:
+To deploy the contract for yourself:
 
-* `Fork this repository`
-* `Edit arguments.js`
-* `Deploy the contract`
+* `Fork this repository.`
+* `Create .env and setup the values to mirror example.env with your keys.`
+* `Edit arguments.js to deploy using the arguments you need.`
+* `Deploy the contract with 'npx hardhat run scripts/deploy.js --network <network_name>'`
 
-Copy-pasting is completely allowed and you can use this however.
+Copy-pasting is completely allowed and you can use this however you would like.
