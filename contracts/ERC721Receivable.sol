@@ -291,27 +291,6 @@ contract ERC721Receivable is
     }
 
     /**
-     * @notice Return whether or not this contract supports a specific functionality
-     * @param _interfaceId The interface identifier, as specified in ERC-165.
-     * @return `true` if the contract implements `_interfaceId`.
-     */
-    function supportsInterface(
-        bytes4 _interfaceId
-    )
-        public
-        view
-        override(
-            ERC721A
-          , ERC1155Receiver
-        )
-        returns (
-            bool
-        )
-    {
-        return super.supportsInterface(_interfaceId);
-    }
-
-    /**
      * @notice Allows an implementation to extend pre-mint logic.
      * @param _aux The amount of tokens being used for payment.
      */
@@ -334,4 +313,30 @@ contract ERC721Receivable is
         internal 
         virtual 
     {}
+
+    // TODO: Withdraw ETH
+    // TODO: Withdraw ERC20
+    // TODO: Withdraw ERC721
+    // TODO: Withdraw ERC1155
+
+    /**
+     * @notice Return whether or not this contract supports a specific functionality
+     * @param _interfaceId The interface identifier, as specified in ERC-165.
+     * @return `true` if the contract implements `_interfaceId`.
+     */
+    function supportsInterface(
+        bytes4 _interfaceId
+    )
+        public
+        view
+        override(
+            ERC721A
+          , ERC1155Receiver
+        )
+        returns (
+            bool
+        )
+    {
+        return super.supportsInterface(_interfaceId);
+    }
 }
