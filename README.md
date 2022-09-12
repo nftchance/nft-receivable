@@ -61,8 +61,9 @@ With your libraries installed run:
 `npx hardhat test`
 
 To the contract for yourself:
-`Fork this repository`
-`Edit arguments.js`
-`Deploy the contract`
+
+* `Fork this repository`
+* `Edit arguments.js`
+* `Deploy the contract`
 
 Copy-pasting is completely allowed and you can use this however.
