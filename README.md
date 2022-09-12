@@ -6,8 +6,8 @@ ERC721Receivable is a simple implementation for a broad `PaymentToken` implement
     /**
         * @dev Expanded payment token data structure.
         * @param tokenType A hacky switch{} to handle 4 cases with 1 values.
-        * @param tokenAddress The address of the token being used for payment.
         * ---- false if ERC20, true if anything else
+        * @param tokenAddress The address of the token being used for payment.
         * @param aux An auxiliary value for the token being used for payment
         * ---- amount of tokens if NATIVE, ERC20 or ERC1155.
         */
