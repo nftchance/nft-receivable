@@ -6,9 +6,12 @@ pragma solidity ^0.8.16;
 import { ERC721A } from "erc721a/contracts/ERC721A.sol";
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
 
-/// @dev Interface to transfer ERC20s for payment.
+/// @dev Interface to transfer payments in and out.
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 
 /**
  * @title ReceivableToken
@@ -28,12 +31,13 @@ contract ERC721Receivable is
       ERC721A
     , ERC721Holder
     , ERC1155Receiver
+    , Ownable
 {
     /**
      * @dev Expanded payment token data structure.
      * @param tokenType A hacky switch{} to handle 4 cases with 1 values.
-     * @param tokenAddress The address of the token being used for payment.
      * ---- false if ERC20, true if anything else
+     * @param tokenAddress The address of the token being used for payment.
      * @param aux An auxiliary value for the token being used for payment
      * ---- amount of tokens if NATIVE, ERC20 or ERC1155.
      */
@@ -70,6 +74,9 @@ contract ERC721Receivable is
      *         how many they want to mint without defining that as well as
      *         us no longer needing the payment check. We love saving gas
      *         just by having better logic than the rest :) 
+     *
+     * Requirements:
+     * - The contract must be accepting native token mints.
      */
     receive() 
         external 
@@ -94,6 +101,9 @@ contract ERC721Receivable is
      * @notice Detects when an ERC721 token is received and mints a token.
      * @param _operator The address of the sender of the ERC721 token.
      * @return selector `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
+     *
+     * Requirements:
+     * - The contract must be accepting tokens from the provided ERC721 token contract.
      */
     function onERC721Received(
         address _operator,
@@ -128,6 +138,9 @@ contract ERC721Receivable is
      * @param _operator The address of the operator that is sending the tokens.
      * @param _value The amounts of tokens being used for purchase power.
      * @return selector `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))`
+     *
+     * Requirements:
+     * - The contract must be accepting tokens from the provided ERC1155 token contract.
      */
     function onERC1155Received(
           address _operator
@@ -201,6 +214,9 @@ contract ERC721Receivable is
      * @notice Determines the amount of tokens that the sender has permission to mint.
      * @param _aux The amount of tokens being used for payment.
      * @return quantity The amount of tokens that can be minted.
+     * 
+     * Requirements:
+     * - If the payment token is ERC20, the sender must transfer them to this contract.
      */
     function _fundMint(
         uint256 _aux
@@ -234,6 +250,11 @@ contract ERC721Receivable is
      * @notice Mints the tokens to the sender.
      * @param _to The address of the receiver of the tokens.
      * @param _aux The amount of tokens being used for payment.
+     * 
+     * Requirements:
+     * - The user must pass the `_beforeMint` check extended by the top-level.
+     * - The total supply must not be exceeded.
+     * - The user must pass the `_afterMint` check extended by the top-level.
      */
     function _mintToken(
           address _to
@@ -271,6 +292,9 @@ contract ERC721Receivable is
  /**
      * @notice Allows a user to mint a token with an ERC20.
      * @param _aux The amount of ERC20 tokens to pay.
+     * 
+     * Requirements:
+     * - The payment token must be setup to accept ERC20s.
      */
     function mintToken(
         uint256 _aux
@@ -314,10 +338,105 @@ contract ERC721Receivable is
         virtual 
     {}
 
-    // TODO: Withdraw ETH
-    // TODO: Withdraw ERC20
-    // TODO: Withdraw ERC721
-    // TODO: Withdraw ERC1155
+    /**
+     * @notice Allows the owner of the contract to withdraw the ETH that has been earned.
+     * @param _to The address of the receiver of the ETH.
+     * 
+     * Requirements:
+     * - The caller must be the owner of the contract.
+     * - The transfer of the ETH must be successful.
+     */ 
+    function withdrawETH(
+        address _to
+    ) 
+        external
+        onlyOwner() 
+    {
+        (bool success, ) = _to.call{value: address(this).balance}('');
+        require(
+              success
+            , "_transferEth: Eth transfer failed"
+        );
+    }
+
+    /**
+     * @notice Allows the owner of the contract to withdraw the ERC20 tokens that have been earned.
+     * @param _to The address of the receiver of the tokens.
+     * @dev When this function is called it will automatically determine how much of the ERC20 is held
+     *      in the contract and transfer it all instead of keeping track of the amount of tokens that
+     *      have been minted / withdrawn.
+     * 
+     * Requirements:
+     * - The caller must be the owner of the contract.
+     */
+    function withdrawERC20(
+          address _tokenAddress
+        , address _to
+    ) 
+        external
+        onlyOwner()
+    { 
+        IERC20(_tokenAddress).transfer(
+              _to
+            , IERC20(_tokenAddress).balanceOf(address(this))
+        );
+    }
+
+    /**
+     * @notice Allows the owner of the contract to withdraw the ERC721 tokens that have been earned.
+     * @param _to The address of contract to the tokens being withdrawn.
+     * @param _tokenIds The ids of the tokens to withdraw.
+     * @param _to The address of the receiver of the tokens.
+     * 
+     * Requirements:
+     * - The caller must be the owner of the contract.
+     */
+    function withdrawERC721(
+          address _tokenAddress
+        , uint256[] calldata _tokenIds
+        , address _to
+    ) 
+        external
+        onlyOwner() 
+    {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            IERC721(_tokenAddress).transferFrom(
+                  address(this)
+                , _to
+                , _tokenIds[i]
+            );
+        }
+    }
+
+    /**
+     * @notice Allows the owner of the contract to withdraw the ERC1155 tokens that have been earned.
+     * @param _tokenAddress The address of contract to the tokens being withdrawn.
+     * @param _tokenIds The ids of the tokens to withdraw.
+     * @param _amounts The amounts of the tokens to withdraw.
+     * @param _to The address of the receiver of the tokens.
+     *
+     * Requirements:
+     * - The caller must be the owner of the contract.
+     */
+    function withdrewERC1155(
+          address _tokenAddress
+        , uint256[] calldata _tokenIds
+        , uint256[] calldata _amounts
+        , address _to
+    ) 
+        external 
+        onlyOwner()
+    {
+        for (uint256 i = 0; i < _tokenIds.length; i++) {
+            IERC1155(_tokenAddress).safeTransferFrom(
+                  address(this)
+                , _to
+                , _tokenIds[i]
+                , _amounts[i]
+                , ""
+            );
+        }
+    }
 
     /**
      * @notice Return whether or not this contract supports a specific functionality
