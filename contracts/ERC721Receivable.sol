@@ -11,45 +11,32 @@ import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
+import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
 contract ERC721Receivable is
       ERC721A
     , ERC721Holder
     , ERC1155Holder
 {
-    enum TOKEN_TYPE {
-          NATIVE
-        , ERC20
-        , ERC721
-        , ERC1155
-    }
-
-    struct PaymentTokenBitpacked { 
-        uint32 tokenData;
-        uint256 aux;
-    }
+    using SafeERC20 for IERC20;
 
     /**
-     * @dev Expanded payment token data structure
-     * @param tokenType The type of token being used for payment
-     * ---- 0 = native, 1 = ERC20, 2 = ERC721, 3 = ERC1155.
-     * @param tokenAddress The address of the token being used for payment
-     * ---- 0x0 for NATIVE, contract address for every other type.
+     * @dev Expanded payment token data structure.
+     * @param tokenType A hacky switch{} to handle 4 cases with 1 values.
+     * @param tokenAddress The address of the token being used for payment.
+     * ---- false if ERC20, true if anything else
      * @param aux An auxiliary value for the token being used for payment
      * ---- amount of tokens if NATIVE, ERC20 or ERC1155.
      */
     struct PaymentToken { 
-        TOKEN_TYPE tokenType;
+        bool tokenType;
         address tokenAddress;
         uint256 aux;
     }
 
-    uint256 constant MAX_SUPPLY = 101;
-
-    uint256[] private EMPTY_TOKEN_IDS = new uint256[](0);
+    uint256 immutable maxSupply;
 
     PaymentToken paymentToken;
 
@@ -57,13 +44,15 @@ contract ERC721Receivable is
           string memory _name
         , string memory _symbol
         , PaymentToken memory _paymentToken
+        , uint256 _maxSupply
     )
         ERC721A(
               _name
             , _symbol
         )
     {
-        _setPaymentToken(_paymentToken);
+        paymentToken = _paymentToken;
+        maxSupply = _maxSupply;
     }
 
     /**
@@ -78,7 +67,7 @@ contract ERC721Receivable is
         payable 
     {
         require(
-              paymentToken.tokenType == TOKEN_TYPE.NATIVE
+              paymentToken.tokenType
             , "ERC721Receivable: Only native tokens are accepted. Everything else must be sent directly."
         );
 
@@ -90,11 +79,11 @@ contract ERC721Receivable is
 
     /**
      * @notice Detects when an ERC721 token is received and mints a token.
-     * @param _from The address of the sender of the ERC721 token.
-     * @return The selector of this function to signal transfer was completed.
+     * @param _operator The address of the sender of the ERC721 token.
+     * @return selector `bytes4(keccak256("onERC721Received(address,address,uint256,bytes)"))`
      */
     function onERC721Received(
-        address _from,
+        address _operator,
         address,
         uint256,
         bytes memory
@@ -103,7 +92,7 @@ contract ERC721Receivable is
         public 
         virtual 
         returns (
-            bytes4
+            bytes4 selector
         ) 
     {
         /// @dev Confirm the address of the token is the same as the payment token.
@@ -113,7 +102,7 @@ contract ERC721Receivable is
         );
 
         _mintToken(
-              _from
+              _operator
             , 1
         );
 
@@ -124,7 +113,7 @@ contract ERC721Receivable is
      * @notice Enables the minting of tokens by sending specified ERC1155 tokens.
      * @param _operator The address of the operator that is sending the tokens.
      * @param _value The amounts of tokens being used for purchase power.
-     * @return bytes4 `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))`
+     * @return selector `bytes4(keccak256("onERC1155Received(address,address,uint256,uint256,bytes)"))`
      */
     function onERC1155Received(
           address _operator
@@ -136,7 +125,7 @@ contract ERC721Receivable is
         override
         public
         returns (
-            bytes4
+            bytes4 selector
         )
     {
         /// @dev Confirm the address of the token is the same as the payment token.
@@ -177,15 +166,6 @@ contract ERC721Receivable is
         revert("ERC721Receivable::onERC1155BatchReceived: batch transfer feature not supported.");
     }
 
-    /// @dev Enable the ability to change the payment structure
-    function _setPaymentToken(
-        PaymentToken memory _paymentToken
-    )
-        internal
-    {
-        paymentToken = _paymentToken;
-    }
-    
     /**
      * @notice Determines how many tokens can be minted based on the payment token.
      * @param _value The amount of tokens being used for payment.
@@ -203,6 +183,11 @@ contract ERC721Receivable is
         return _value / paymentToken.aux;
     }
 
+    /**
+     * @notice Determines the amount of tokens that the sender has permission to mint.
+     * @param _aux The amount of tokens being used for payment.
+     * @return quantity The amount of tokens that can be minted.
+     */
     function _fundMint(
         uint256 _aux
     )
@@ -213,7 +198,7 @@ contract ERC721Receivable is
     { 
         /// @dev Handling payments in ERC20 because the delivery cannot be guaranteed
         ///      as there is no received hook due to bad erc design.
-        if(paymentToken.tokenType == TOKEN_TYPE.ERC20) {
+        if(!paymentToken.tokenType) {
             IERC20 _token = IERC20(paymentToken.tokenAddress);
 
             /// @dev Transfer the tokens to the contract
@@ -231,6 +216,11 @@ contract ERC721Receivable is
         quantity = _valueQuantity(_aux);
     }
 
+    /**
+     * @notice Mints the tokens to the sender.
+     * @param _to The address of the receiver of the tokens.
+     * @param _aux The amount of tokens being used for payment.
+     */
     function _mintToken(
           address _to
         , uint256 _aux
@@ -240,13 +230,13 @@ contract ERC721Receivable is
     {
         uint256 _totalSupply = totalSupply();
 
-        uint256 _quantity = _fundMint(_aux);         
+        uint256 _quantity = _fundMint(_aux);
 
         require(
-              _totalSupply + _quantity < MAX_SUPPLY
+              _totalSupply + _quantity < maxSupply
             , "ERC721Receivable::mintToken: total supply exceeded."
         );
-        
+
         _mint(
               _to
             , _quantity

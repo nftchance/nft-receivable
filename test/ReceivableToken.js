@@ -15,11 +15,12 @@ describe("Receivable", function () {
             "ReceivableToken",
             "RBT",
             {
-                tokenType: 0,
+                tokenType: true,
                 tokenAddress: "0x0000000000000000000000000000000000000000",
                 tokenId: 0,
                 aux: ethers.utils.parseEther('0.02')
             },
+            101
         );
         receivableToken = await receivableToken.deployed();
     })
@@ -59,11 +60,12 @@ describe("Receivable", function () {
                 "ReceivableToken",
                 "RBT",
                 {
-                    tokenType: 3,
+                    tokenType: true,
                     tokenAddress: mockERC1155.address,
                     tokenId: 0,
                     aux: 1
                 },
+                101
             );
             receivable1155 = await receivable1155.deployed();
         })
@@ -92,11 +94,12 @@ describe("Receivable", function () {
                 "ReceivableToken",
                 "RBT",
                 {
-                    tokenType: 2,
+                    tokenType: true,
                     tokenAddress: mockERC721.address,
                     tokenId: 0,
                     aux: 1
                 },
+                101
             );
             receivable721 = await receivable721.deployed();
         })
@@ -147,11 +150,12 @@ describe("Receivable", function () {
                 "ReceivableToken",
                 "RBT",
                 {
-                    tokenType: 1,
+                    tokenType: false,
                     tokenAddress: mockERC20.address,
                     tokenId: 0,
                     aux: 1
                 },
+                101
             );
             receivableERC20 = await receivableERC20.deployed();
         })

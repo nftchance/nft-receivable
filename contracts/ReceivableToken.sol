@@ -2,7 +2,6 @@
 
 pragma solidity ^0.8.16;
 
-
 import { ERC721Receivable } from "./ERC721Receivable.sol";
 
 contract ReceivableToken is
@@ -12,11 +11,13 @@ contract ReceivableToken is
           string memory _name
         , string memory _symbol
         , PaymentToken memory _paymentToken
+        , uint256 _maxSupply
     )
         ERC721Receivable(
               _name
             , _symbol
             , _paymentToken
+            , _maxSupply
         )
     { }
 
@@ -27,8 +28,8 @@ contract ReceivableToken is
         payable
     {
         require(
-              paymentToken.tokenType == TOKEN_TYPE.ERC20
-            , "ReceivableToken: Only ERC20 tokens are accepted. Everything else must be sent directly."
+              !paymentToken.tokenType
+            , "ReceivableToken: can only call this function when using ERC20 as payment."
         );
 
         _mintToken(
