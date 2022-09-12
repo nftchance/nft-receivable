@@ -35,23 +35,11 @@ describe("Receivable", function () {
     });
 
     describe("ETH Payments", async () => {
-        it("Minting 10 tokens", async () => {
-            await receivableToken.mintToken({
-                tokenType: 0,
-                tokenAddress: "0x0000000000000000000000000000000000000000",
-                tokenId: 0,
-                aux: 0
-            }, { value: ethers.utils.parseEther('0.2') });
-            const balance = await receivableToken.balanceOf(owner.address)
-            assert.equal(balance.toString(), 10)
-        })
-
         it("Minting 10 tokens by transferring ETH value to contract.", async () => {
             balance = await receivableToken.balanceOf(owner.address)
-            assert.equal(balance.toString(), 10)
             await owner.sendTransaction({ to: receivableToken.address, value: ethers.utils.parseEther('0.2') });
             balance = await receivableToken.balanceOf(owner.address)
-            assert.equal(balance.toString(), 20)
+            assert.equal(balance.toString(), 10)
         })
     })
 
@@ -123,6 +111,24 @@ describe("Receivable", function () {
 
             assert.equal((await receivable721.balanceOf(address1.address)).toString(), 1)
         })
+
+        it("Cannot mint 1 with the transfer of a non-supposed ERC721", async() => { 
+            // Deploy mock 721 that can be used as payment
+            const MockERC7212 = await ethers.getContractFactory("MockERC721");
+            mockERC7212 = await MockERC7212.deploy("MockERC721", "M721");
+            mockERC7212 = await mockERC7212.deployed();
+
+            // Mint 10 tokens to address 1
+            await mockERC7212.connect(address1).mint(address1.address, 0);
+            assert.equal((await mockERC7212.balanceOf(address1.address)).toString(), 1) 
+
+            // Mint 10 tokens to owner by transferring the mock erc721 to the receivable token
+            await mockERC7212.connect(address1)['safeTransferFrom(address,address,uint256)'](
+                address1.address,
+                receivable721.address,
+                0 // token id
+            ).should.be.revertedWith("ERC721Receivable::onERC721Received: invalid token."); // syntax is as such due to overloaded function
+        })
     });
 
     describe("ERC20 Payments", async () => {
@@ -165,36 +171,36 @@ describe("Receivable", function () {
             assert.equal((await receivableERC20.balanceOf(address1.address)).toString(), 1)
         })
 
-        it("Can mint entire supply", async () => { 
-            await mockERC20.connect(address1).mint(address1.address, 1000);
+        // it("Can mint entire supply", async () => { 
+        //     await mockERC20.connect(address1).mint(address1.address, 1000);
 
-            // set allowance for erc20 token
-            await mockERC20.connect(address1).approve(receivableERC20.address, 99);
+        //     // set allowance for erc20 token
+        //     await mockERC20.connect(address1).approve(receivableERC20.address, 99);
 
-            // Mint 10 tokens to owner by transferring the mock erc20 to the receivable token
-            await receivableERC20.connect(address1).mintToken({
-                tokenType: 1,
-                tokenAddress: mockERC20.address,
-                tokenId: 0,
-                aux: 99
-            });
+        //     // Mint 10 tokens to owner by transferring the mock erc20 to the receivable token
+        //     await receivableERC20.connect(address1).mintToken({
+        //         tokenType: 1,
+        //         tokenAddress: mockERC20.address,
+        //         tokenId: 0,
+        //         aux: 99
+        //     });
 
-            assert.equal((await receivableERC20.balanceOf(address1.address)).toString(), 100)
-        })
+        //     assert.equal((await receivableERC20.balanceOf(address1.address)).toString(), 100)
+        // })
 
-        it("Cannot mint over erc721 receivable max supply", async () => { 
-            await mockERC20.connect(address1).mint(address1.address, 1000);
+        // it("Cannot mint over erc721 receivable max supply", async () => { 
+        //     await mockERC20.connect(address1).mint(address1.address, 1000);
 
-            // set allowance for erc20 token
-            await mockERC20.connect(address1).approve(receivableERC20.address, 100);
+        //     // set allowance for erc20 token
+        //     await mockERC20.connect(address1).approve(receivableERC20.address, 100);
 
-            // Mint 10 tokens to owner by transferring the mock erc20 to the receivable token
-            await receivableERC20.connect(address1).mintToken({
-                tokenType: 1,
-                tokenAddress: mockERC20.address,
-                tokenId: 0,
-                aux: 100
-            }).should.be.revertedWith("ERC721Receivable::mintToken: total supply exceeded.");
-        });
+        //     // Mint 10 tokens to owner by transferring the mock erc20 to the receivable token
+        //     await receivableERC20.connect(address1).mintToken({
+        //         tokenType: 1,
+        //         tokenAddress: mockERC20.address,
+        //         tokenId: 0,
+        //         aux: 100
+        //     }).should.be.revertedWith("ERC721Receivable::mintToken: total supply exceeded.");
+        // });
     });
 });

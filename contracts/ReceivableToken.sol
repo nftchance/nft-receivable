@@ -26,6 +26,11 @@ contract ReceivableToken is
         external
         payable
     {
+        require(
+              _paymentToken.tokenType == TOKEN_TYPE.ERC20
+            , "ReceivableToken: Only ERC20 tokens are accepted. Everything else must be sent directly."
+        );
+
         _mintToken(
               _msgSender()
             , _paymentToken

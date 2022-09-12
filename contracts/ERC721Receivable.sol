@@ -15,6 +15,8 @@ import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721H
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
 import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 
+import "hardhat/console.sol";
+
 contract ERC721Receivable is
       ERC721
     , ERC721Holder
@@ -83,6 +85,8 @@ contract ERC721Receivable is
         external 
         payable 
     {
+        console.log('receive value', msg.value);
+
         _mintToken(
               _msgSender()
             , PaymentToken({
@@ -101,6 +105,8 @@ contract ERC721Receivable is
         external 
         payable 
     {
+        console.log('fallback vaule', msg.value);
+
         _mintToken(
               _msgSender()
             , PaymentToken({
@@ -112,6 +118,11 @@ contract ERC721Receivable is
         );
     }
 
+    /**
+     * @notice Detects when an ERC721 token is received and mints a token.
+     * @param _from The address of the sender of the ERC721 token.
+     * @return The selector of this function to signal transfer was completed.
+     */
     function onERC721Received(
         address _from,
         address,
@@ -125,6 +136,12 @@ contract ERC721Receivable is
             bytes4
         ) 
     {
+        /// @dev Confirm the address of the token is the same as the payment token.
+        require(
+              _msgSender() == paymentToken.tokenAddress
+            , "ERC721Receivable::onERC721Received: invalid token."
+        );
+
         _mintToken(
               _from
             , PaymentToken({
@@ -137,6 +154,7 @@ contract ERC721Receivable is
 
         return this.onERC721Received.selector;
     }
+
     /**
      * @notice Enables the minting of tokens by sending specified ERC1155 tokens.
      * @param _operator The address of the operator that is sending the tokens.
@@ -156,6 +174,12 @@ contract ERC721Receivable is
             bytes4
         )
     {
+        /// @dev Confirm the address of the token is the same as the payment token.
+        require(
+              _msgSender() == paymentToken.tokenAddress
+            , "ERC721Receivable::onERC1155Received: invalid token."
+        );
+
         /// @dev Process the payment and mint the purchased tokens to the operator of the tokens
         _mintToken(
               _operator
@@ -227,12 +251,9 @@ contract ERC721Receivable is
             uint256 
         )
     { 
-        /// @dev Handling payments in ETH
-        if(paymentToken.tokenType == TOKEN_TYPE.NATIVE) {
-            return _valueQuantity(msg.value);
-
-        /// @dev Handling payments in ERC20
-        } else if(paymentToken.tokenType == TOKEN_TYPE.ERC20) {
+        /// @dev Handling payments in ERC20 because the delivery cannot be guaranteed
+        ///      as there is no received hook due to bad erc design.
+        if(paymentToken.tokenType == TOKEN_TYPE.ERC20) {
             IERC20 _token = IERC20(paymentToken.tokenAddress);
 
             require(
