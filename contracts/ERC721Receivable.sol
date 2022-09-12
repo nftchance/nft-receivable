@@ -2,26 +2,19 @@
 
 pragma solidity ^0.8.16;
 
+/// @dev Core processing definitions for ERC721Receivable.
 import { ERC721A } from "erc721a/contracts/ERC721A.sol";
-
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { IERC721 } from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import { IERC1155 } from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import { ERC721Holder } from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import { ERC1155Holder } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-
 import { ERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Receiver.sol";
+
+/// @dev Interface to transfer ERC20s for payment.
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract ERC721Receivable is
       ERC721A
     , ERC721Holder
-    , ERC1155Holder
+    , ERC1155Receiver
 {
-    using SafeERC20 for IERC20;
-
     /**
      * @dev Expanded payment token data structure.
      * @param tokenType A hacky switch{} to handle 4 cases with 1 values.
@@ -36,8 +29,10 @@ contract ERC721Receivable is
         uint256 aux;
     }
 
+    /// @dev The max number of tokens that can be minted.
     uint256 immutable maxSupply;
 
+    /// @dev The payment schema for the mint.
     PaymentToken paymentToken;
 
     constructor(
@@ -71,6 +66,10 @@ contract ERC721Receivable is
             , "ERC721Receivable: Only native tokens are accepted. Everything else must be sent directly."
         );
 
+        /// @dev Mint the tokens.
+        /// @dev We don't need to check the amount because we are using
+        ///      the native token and the amount is already defined in
+        ///      the paymentToken struct.
         _mintToken(
               msg.sender
             , msg.value
@@ -101,6 +100,7 @@ contract ERC721Receivable is
             , "ERC721Receivable::onERC721Received: invalid token."
         );
 
+        /// @dev Mint the token.
         _mintToken(
               _operator
             , 1
@@ -134,7 +134,7 @@ contract ERC721Receivable is
             , "ERC721Receivable::onERC1155Received: invalid token."
         );
 
-        /// @dev Process the payment and mint the purchased tokens to the operator of the tokens
+        /// @dev Mint the tokens.
         _mintToken(
               _operator
             , _value
@@ -228,8 +228,10 @@ contract ERC721Receivable is
         internal
         virtual
     {
+        /// @dev Determine the amount of tokens that have been minted.
         uint256 _totalSupply = totalSupply();
 
+        /// @dev Determine the amount of tokens that can be minted.
         uint256 _quantity = _fundMint(_aux);
 
         require(
@@ -237,14 +239,20 @@ contract ERC721Receivable is
             , "ERC721Receivable::mintToken: total supply exceeded."
         );
 
+        /// @dev Mint the tokens.
         _mint(
               _to
             , _quantity
         );
     }
 
+    /**
+     * @notice Return whether or not this contract supports a specific functionality
+     * @param _interfaceId The interface identifier, as specified in ERC-165.
+     * @return `true` if the contract implements `_interfaceId`.
+     */
     function supportsInterface(
-        bytes4 interfaceId
+        bytes4 _interfaceId
     )
         public
         view
@@ -256,6 +264,6 @@ contract ERC721Receivable is
             bool
         )
     {
-        return super.supportsInterface(interfaceId);
+        return super.supportsInterface(_interfaceId);
     }
 }
