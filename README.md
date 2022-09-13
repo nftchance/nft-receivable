@@ -62,9 +62,17 @@ With your libraries installed run:
 
 To deploy the contract for yourself:
 
-* `Fork this repository.`
-* `Create .env and setup the values to mirror example.env with your keys.`
-* `Edit arguments.js to deploy using the arguments you need.`
-* `Deploy the contract with 'npx hardhat run scripts/deploy.js --network <network_name>'`
+* Fork this repository.
+* Create `.env` and setup the values to mirror `example.env` with your keys.
+* Run the script to deploy your Mock Payment Token if an ERC:
+  * `npx hardhat run scripts/mocks/deployERC20.js`
+  * `npx hardhat run scripts/mocks/deployERC721.js`
+  * `npx hardhat run scripts/mocks/deployERC1155.js`
+* Edit `arguments.js` to deploy using the arguments you need.
+  * The payment token address will be the contract address of the Mock Payment Token you deployed or `address(0)` for ETH.
+* Run: `npx hardhat run scripts/deploy.js --network rinkeby`
+  * Replace rinkeby with the network you want to deploy to. (mainnet, rinkeby, etc.) 
+
+> If you are having an issue that is because there is a setup issue.
 
 Copy-pasting is completely allowed and you can use this however you would like.

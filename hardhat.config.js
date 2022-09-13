@@ -33,13 +33,13 @@ module.exports = {
       },
     },
     rinkeby: {
-      url: `https://eth-rinkeby.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-      accounts: [`0x${PRIVATE_KEY}`],
+      url: `https://eth-rinkeby.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
       gasPrice: 5000000000, // 5 gwei
     },
     mainnet: {
-      url: `https://eth-mainnet.alchemyapi.io/v2/${ALCHEMY_API_KEY}`,
-      accounts: [`0x${PRIVATE_KEY}`],
+      url: `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`,
+      accounts: [`0x${process.env.PRIVATE_KEY}`],
       gasPrice: 20000000000, // 20 gwei
     },
   },
